@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "cwd": "${workspaceFolder}",
+            "executable": "build/Blink.elf",
+            "name": "Debug",
+            "request": "launch",
+            "type": "cortex-debug",
+            "device": "stm32f723ze",
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "none",
+            "servertype": "jlink",
+            "preLaunchTask": "Build"
+        }
+    
+    ]
+}
