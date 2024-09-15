@@ -18,5 +18,8 @@ typedef struct {
 
 } motor_t;
 
+//Extern = Declare variable
+// extern int a ;
 void MOTOR_init();
+void Timer1_Init();
 float MOTOR_readAngle();
