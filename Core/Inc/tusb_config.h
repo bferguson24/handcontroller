@@ -36,7 +36,7 @@
 
 // RHPort number used for device can be defined by board.mk, default to port 0
 #ifndef BOARD_TUD_RHPORT
-#define BOARD_TUD_RHPORT      0
+#define BOARD_TUD_RHPORT      1
 #endif
 
 // RHPort max operational speed can defined by board.mk
@@ -58,9 +58,11 @@
 #define CFG_TUSB_OS           OPT_OS_NONE
 #endif
 
-#ifndef CFG_TUSB_DEBUG
-#define CFG_TUSB_DEBUG        0
-#endif
+#define CFG_TUSB_DEBUG        3
+
+
+// extern int debug_print(const char * sFormat, ...);
+#define CFG_TUSB_DEBUG_PRINTF   printf
 
 // Enable Device stack
 #define CFG_TUD_ENABLED       1
@@ -92,18 +94,21 @@
 #endif
 
 //------------- CLASS -------------//
-#define CFG_TUD_CDC               2
+#define CFG_TUD_CDC               0
 #define CFG_TUD_MSC               0
 #define CFG_TUD_HID               0
 #define CFG_TUD_MIDI              0
-#define CFG_TUD_VENDOR            0
+#define CFG_TUD_VENDOR            1
 
-// CDC FIFO size of TX and RX
-#define CFG_TUD_CDC_RX_BUFSIZE   (TUD_OPT_HIGH_SPEED ? 512 : 64)
-#define CFG_TUD_CDC_TX_BUFSIZE   (TUD_OPT_HIGH_SPEED ? 512 : 64)
+// // CDC FIFO size of TX and RX
+// #define CFG_TUD_CDC_RX_BUFSIZE   (TUD_OPT_HIGH_SPEED ? 512 : 64)
+// #define CFG_TUD_CDC_TX_BUFSIZE   (TUD_OPT_HIGH_SPEED ? 512 : 64)
 
-// CDC Endpoint transfer buffer size, more is faster
-#define CFG_TUD_CDC_EP_BUFSIZE   (TUD_OPT_HIGH_SPEED ? 512 : 64)
+// // CDC Endpoint transfer buffer size, more is faster
+// #define CFG_TUD_CDC_EP_BUFSIZE   (TUD_OPT_HIGH_SPEED ? 512 : 64)
+
+#define CFG_TUD_VENDOR_RX_BUFSIZE   512
+#define CFG_TUD_VENDOR_TX_BUFSIZE   512
 
 #ifdef __cplusplus
  }

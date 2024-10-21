@@ -11,7 +11,18 @@
             "showDevDebugOutput": "none",
             "servertype": "jlink",
             "preLaunchTask": "Build",
-            "svdFile": "STM32F723.svd"
+            "svdFile": "STM32F723.svd",
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "decoders": [
+                    {
+                        "port": 0,
+                        "timestamp": true,
+                        "type": "console"
+                    }
+                ]
+            },
         }
     
     ]

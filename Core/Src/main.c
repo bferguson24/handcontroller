@@ -24,6 +24,7 @@
 
 
 
+#include "device/usbd_pvt.h"
 #include "stm32f7xx_hal_adc.h"
 #include "stm32f7xx_hal_def.h"
 
@@ -31,8 +32,12 @@
 #include "stm32f7xx_hal_tim.h"
 
 #include "arm_math.h" 
-#include "usbd_cdc_if.h"
 #include <stdint.h>
+
+#include "tusb_config.h"
+#include "tusb.h"
+#include "SEGGER_RTT.h"
+
 
 
 
@@ -193,20 +198,21 @@ MotorSet_t motorSet = {
 
 
 
-// Function - USB Blocking
-USBD_StatusTypeDef CDC_Transmit_HS_Blocking(uint8_t* Buf, uint16_t Len) {
-    USBD_StatusTypeDef result = USBD_BUSY;
+// // Function - USB Blocking
+// USBD_StatusTypeDef CDC_Transmit_HS_Blocking(uint8_t* Buf, uint16_t Len) {
+//     USBD_StatusTypeDef result = USBD_BUSY;
 
-    // Keep attempting to transmit until USBD_OK is returned
-    while (result != USBD_OK) {
-        result = CDC_Transmit_HS(Buf, Len);
+//     // Keep attempting to transmit until USBD_OK is returned
+//     while (result != USBD_OK) {
+//         result = CDC_Transmit_HS(Buf, Len);
         
-        // Optionally add a small delay to avoid CPU overload
-        HAL_Delay(1);
-    }
+//         // Optionally add a small delay to avoid CPU overload
+//         HAL_Delay(1);
+//     }
 
-    return result;
-}
+//     return result;
+// }
+uint8_t rtt_buffer[1024];
 
 
 /* USER CODE END 0 */
@@ -219,8 +225,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, rtt_buffer, sizeof(rtt_buffer), SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
-
+  printf("hello again");
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -258,6 +265,12 @@ int main(void)
   MX_USB_OTG_HS_PCD_Init();
   /* USER CODE BEGIN 2 */
 
+  const char* message = "Please work USB";
+
+__HAL_RCC_USB_OTG_HS_CLK_ENABLE();
+
+  tud_init(BOARD_TUD_RHPORT);
+
 
 
 
@@ -270,9 +283,9 @@ int main(void)
 
 
 
-  HAL_TIM_Base_Start(&htim5);
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 3);
-  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)(DMA_buffer+3), 3);
+  // HAL_TIM_Base_Start(&htim5);
+  // HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 3);
+  // HAL_ADC_Start_DMA(&hadc2, (uint32_t*)(DMA_buffer+3), 3);
 
 
   /* USER CODE END 2 */
@@ -281,9 +294,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    uint8_t message[] = "Hello COM port";
-    CDC_Transmit_HS_Blocking(message, sizeof(message));
-    HAL_Delay(1000);
+  tud_task();
+  // if(tud_connected()){
+  //   // usbd_edpt_xfer(1, 0, "hello world", 12);
+
+  //   // tud_cdc_write(message,strlen(message));
+
+  //   // tud_cdc_write_flush();
+
+  //   HAL_Delay(10);
+  // }
+  //cdc_task();
 
     /* USER CODE END WHILE */
 
@@ -830,6 +851,106 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+
+// Invoked when received GET DEVICE DESCRIPTOR request
+// Application return pointer to descriptor
+// uint8_t const * tud_descriptor_device_cb(void) {
+
+// return NULL;
+// }
+
+// Invoked when received GET CONFIGURATION DESCRIPTOR request
+// Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
+// uint8_t const * tud_descriptor_configuration_cb(uint8_t index){
+
+// return NULL;
+// }
+
+// Invoked when received GET STRING DESCRIPTOR request
+// // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
+// uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid){
+
+// return NULL;
+// }
+
+// Invoked when received GET BOS DESCRIPTOR request
+// Application return pointer to descriptor
+uint8_t const * tud_descriptor_bos_cb(void){
+
+return NULL;
+}
+
+
+// Invoked when received GET DEVICE QUALIFIER DESCRIPTOR request
+// Application return pointer to descriptor, whose contents must exist long enough for transfer to complete.
+// device_qualifier descriptor describes information about a high-speed capable device that would
+// change if the device were operating at the other speed. If not highspeed capable stall this request.
+// uint8_t const* tud_descriptor_device_qualifier_cb(void){
+
+// return NULL;
+// }
+
+// Invoked when received GET OTHER SEED CONFIGURATION DESCRIPTOR request
+// Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
+// Configuration descriptor in the other speed e.g if high speed then this is for full speed and vice versa
+// uint8_t const* tud_descriptor_other_speed_configuration_cb(uint8_t index){
+
+// return NULL;
+// }
+#define BULK_EP_SIZE       64    // Endpoint size
+
+// Buffer for incoming data
+uint8_t bulk_out_buffer[BULK_EP_SIZE];
+
+// Buffer for outgoing data
+uint8_t bulk_in_buffer[BULK_EP_SIZE] = "Hello from TinyUSB";
+
+void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
+{
+  volatile int i = 0;
+  printf("received data");
+  tud_vendor_write_str("Hello, world!");
+  tud_vendor_n_write_flush(0);
+}
+
+// Invoked when device is mounted (configured)
+void tud_mount_cb(void){
+
+}
+
+// Invoked when device is unmounted
+void tud_umount_cb(void){
+
+}
+
+// Invoked when usb bus is suspended
+// Within 7ms, device must draw an average of current less than 2.5 mA from bus
+void tud_suspend_cb(bool remote_wakeup_en){
+
+}
+
+// Invoked when usb bus is resumed
+void tud_resume_cb(void){
+
+}
+
+// Invoked when there is a new usb event, which need to be processed by tud_task()/tud_task_ext()
+void tud_event_hook_cb(uint8_t rhport, uint32_t eventid, bool in_isr){
+
+}
+
+// Invoked when a new (micro) frame started
+void tud_sof_cb(uint32_t frame_count){
+
+}
+
+// Invoked when received control request with VENDOR TYPE
+bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request){
+  
+return NULL;
+}
+
+
 /* USER CODE END 4 */
 
  /* MPU Configuration */
@@ -892,3 +1013,5 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+

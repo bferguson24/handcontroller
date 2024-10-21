@@ -643,7 +643,7 @@ static bool check_dwc2(dwc2_regs_t* dwc2) {
   // For some reason: GD32VF103 snpsid and all hwcfg register are always zero (skip it)
   (void) dwc2;
 #if !TU_CHECK_MCU(OPT_MCU_GD32VF103)
-  uint32_t const gsnpsid = dwc2->gsnpsid & GSNPSID_ID_MASK;
+  volatile uint32_t const gsnpsid = dwc2->gsnpsid & GSNPSID_ID_MASK;
   TU_ASSERT(gsnpsid == DWC2_OTG_ID || gsnpsid == DWC2_FS_IOT_ID || gsnpsid == DWC2_HS_IOT_ID);
 #endif
 
@@ -1104,7 +1104,6 @@ static void handle_epin_irq(uint8_t rhport) {
 
       if (epin[n].diepint & DIEPINT_XFRC) {
         epin[n].diepint = DIEPINT_XFRC;
-
         // EP0 can only handle one packet
         if ((n == 0) && ep0_pending[TUSB_DIR_IN]) {
           // Schedule another packet to be transmitted.
