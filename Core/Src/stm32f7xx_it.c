@@ -308,8 +308,8 @@ float theta2_filtered;
   extern float W2; 
 
 
-  W1 = DMA_buffer[4]/4095.0f; 
-  W2 = DMA_buffer[5]/4095.0f; 
+  W1 = DMA_buffer[3]/4095.0f; 
+  W2 = DMA_buffer[4]/4095.0f; 
 
   torqueControl(motorSet, W1,W2);
 

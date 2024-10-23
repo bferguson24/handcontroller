@@ -31,6 +31,7 @@ typedef struct {
 
     // Position
     int16_t *positionCounts;
+    float theta_filtered;
 
 
     float angle_distance;

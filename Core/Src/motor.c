@@ -6,43 +6,70 @@
 
 
 
+
+
+
+
 float angleCalc(motor_t *Motor){
-    float theta_out = (Motor->angle_1 - *Motor->positionCounts)*(Motor->angle_distance/(Motor->angle_2 - Motor->angle_1));
-    return theta_out;
+    float theta_raw = (Motor->angle_1 - *Motor->positionCounts)*(Motor->angle_distance/(Motor->angle_2 - Motor->angle_1));
+    float theta_filtered = LowPassFilter(theta_raw, Motor->theta_filtered, 0.1);
+    Motor->theta_filtered = theta_filtered;
+    return theta_filtered;
 }
 
 
-float theta1_f;
-float theta2_f;
 extern MotorSet_t motorSet;
 
 
 void torqueControl(MotorSet_t motorSet, float W1,float W2){
 
 //Joint Angles
-float theta1raw = angleCalc(&motorSet.motors[0]);
-float theta2raw = angleCalc(&motorSet.motors[1]);
+// float theta1raw = angleCalc(&motorSet.motors[0]);
+// float theta2raw = angleCalc(&motorSet.motors[1]);
     
     //Apply Filter
-    theta1_f = LowPassFilter(theta1raw,theta1_f, 0.1);
-    theta2_f = LowPassFilter(theta2raw,theta2_f, 0.1);
+    // theta1_f = LowPassFilter(theta1raw,theta1_f, 0.1);
+    // theta2_f = LowPassFilter(theta2raw,theta2_f, 0.1);
+
+    //Theta1
+    // motorSet.motors[0].theta_filtered = angleCalc(&motorSet.motors[0]);
+    // float theta1_f = motorSet.motors[0].theta_filtered; 
+
+    //Theta2 
+    // motorSet.motors[1].theta_filtered = angleCalc(&motorSet.motors[1]);
+    // float theta2_f = motorSet.motors[1].theta_filtered; 
+
+    for (int i = 0 ; i < motorSet.motorCount; i++){
+        angleCalc(&motorSet.motors[i]);
+    }
+
+
+    float theta2_f = motorSet.motors[1].theta_filtered;
+
+    float theta3_f = motorSet.motors[2].theta_filtered;
+
+ 
+    // theta2_f = angleCalc(&motorSet.motors[1]);
+    
+
 
 //Torque Set Points // FUTURE REV will calculate this externally
 
-    motorSet.motors[0].pid.setpoint = W1 * cos(theta1_f * PI/180.0f) + W2 * cos((theta1_f + theta2_f) * PI/180.0f);
-    motorSet.motors[1].pid.setpoint = -W1 * cos((theta1_f + theta2_f) * PI/180.0f);
+    // motorSet.motors[0].pid.setpoint = W1 * cos(theta2_f * PI/180.0f) + W2 * cos((theta2_f + theta3_f) * PI/180.0f);
+    // motorSet.motors[1].pid.setpoint = -W1 * cos((theta2_f + theta3_f) * PI/180.0f);
 
 //Torque Process In Points
-
-    //T1
-    motorSet.motors[0].pid.processIn = *motorSet.motors[0].currentCounts / 4095.0f;
 
     //T2
     motorSet.motors[1].pid.processIn = *motorSet.motors[1].currentCounts / 4095.0f;
 
+    //T3
+    motorSet.motors[2].pid.processIn = *motorSet.motors[2].currentCounts / 4095.0f;
+
 //Execute
 
-    for (int i = 0; i < motorSet.motorCount; i++){
+//i = 1 Start at J2/J3 Since 
+    for (int i = 1; i < motorSet.motorCount; i++){
     //Store Direction Value
 
         float direction = 1;

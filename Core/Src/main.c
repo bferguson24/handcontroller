@@ -117,15 +117,28 @@ static void MX_TIM5_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_USB_OTG_HS_PCD_Init(void);
 /* USER CODE BEGIN PFP */
-int16_t DMA_buffer[6];
+int16_t DMA_buffer[8];
 
 
 // MOTOR Object Creation
 MotorSet_t motorSet = {
-  .motorCount = 2,
+  .motorCount = 4,
   .motors = {
     {  
-    //MOTOR1
+    //MOTOR1 (No Power/Angle Only)
+
+    //DMA Values
+    .positionCounts = &DMA_buffer[7],
+    .theta_filtered = 0,
+
+    //Angle Calibration
+    .angle_distance = 45.0f,
+    .angle_1 = 2060.0f,
+    .angle_2 = 1568.0f,
+    },
+
+      {  
+    //MOTOR2
 
       //Config Parameters
       .htim = &htim9,
@@ -138,11 +151,12 @@ MotorSet_t motorSet = {
       //DMA Values
       .positionCounts = &DMA_buffer[0],
       .currentCounts = &DMA_buffer[1],
+      .theta_filtered = 0,
 
       //Angle Calibration
       .angle_distance = 90.0f,
-      .angle_1 = 2090.0f,
-      .angle_2 = 898.0f,
+      .angle_1 = 2191.0f,
+      .angle_2 = 1107.0f,
 
         //PID Parameters
         .pid = {
@@ -156,7 +170,7 @@ MotorSet_t motorSet = {
     },
 
     {
-    //MOTOR2
+    //MOTOR3
 
       //Config Parameters
       .htim = &htim4,
@@ -167,12 +181,13 @@ MotorSet_t motorSet = {
 
       //DMA Values
       .positionCounts = &DMA_buffer[2],
-      .currentCounts = &DMA_buffer[3],
+      .currentCounts = &DMA_buffer[5],
+      .theta_filtered = 0,
 
       //Angle Calibration
       .angle_distance = -90.0f,
-      .angle_1 = 2925.0f,
-      .angle_2 = 1903.0f,
+      .angle_1 = 1012.0f,
+      .angle_2 = 1977.0f,
 
       //PID Parameters
       .pid = {
@@ -182,7 +197,20 @@ MotorSet_t motorSet = {
         .processMax = 1,
         .processMin = 0.01,
         //.setpoint = 0.1,    
-      },
+      }
+    },
+
+    {
+    //MOTOR1 (No Power/Angle Only)
+
+    //DMA Values
+    .positionCounts = &DMA_buffer[6],
+    .theta_filtered = 0,
+
+    //Angle Calibration
+    .angle_distance = 90.0f,
+    .angle_1 = 2170.0f,
+    .angle_2 = 3275.0f,
     }
   }
 }; 
@@ -213,6 +241,29 @@ MotorSet_t motorSet = {
 //     return result;
 // }
 uint8_t rtt_buffer[1024];
+
+typedef struct {
+  float j1_torque;
+  float j2_torque;
+  float j3_torque;
+} setpoint_cmd_t;
+
+
+typedef struct {
+  float theta1;
+  float theta2;
+  float theta3;
+  float theta4;
+
+  float current1;
+  float current2;
+  float current3;
+
+  float W1;
+  float W2;
+} armstatus_t;
+
+
 
 
 /* USER CODE END 0 */
@@ -265,7 +316,6 @@ int main(void)
   MX_USB_OTG_HS_PCD_Init();
   /* USER CODE BEGIN 2 */
 
-  const char* message = "Please work USB";
 
 __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
 
@@ -283,9 +333,9 @@ __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
 
 
 
-  // HAL_TIM_Base_Start(&htim5);
-  // HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 3);
-  // HAL_ADC_Start_DMA(&hadc2, (uint32_t*)(DMA_buffer+3), 3);
+  HAL_TIM_Base_Start(&htim5);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 5);
+  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)(DMA_buffer+5), 3);
 
 
   /* USER CODE END 2 */
@@ -295,17 +345,6 @@ __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
   while (1)
   {
   tud_task();
-  // if(tud_connected()){
-  //   // usbd_edpt_xfer(1, 0, "hello world", 12);
-
-  //   // tud_cdc_write(message,strlen(message));
-
-  //   // tud_cdc_write_flush();
-
-  //   HAL_Delay(10);
-  // }
-  //cdc_task();
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -394,7 +433,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T5_TRGO;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 3;
+  hadc1.Init.NbrOfConversion = 5;
   hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -426,6 +465,24 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_3;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_5;
+  sConfig.Rank = ADC_REGULAR_RANK_4;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Rank = ADC_REGULAR_RANK_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -636,7 +693,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 10799;
+  htim4.Init.Period = 5400;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
@@ -907,10 +964,42 @@ uint8_t bulk_in_buffer[BULK_EP_SIZE] = "Hello from TinyUSB";
 
 void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 {
+//Data IN
   volatile int i = 0;
-  printf("received data");
-  tud_vendor_write_str("Hello, world!");
+  setpoint_cmd_t cmd;
+  memcpy(&cmd, buffer, bufsize);
+  tud_vendor_read_flush();
+
+  printf("Received setpoint! j1 = %f, j2 = %f, j3 = %f", 
+  cmd.j1_torque,
+  cmd.j2_torque,
+  cmd.j3_torque);
+
+  motorSet.motors[0].pid.setpoint = cmd.j1_torque; 
+  motorSet.motors[1].pid.setpoint = cmd.j2_torque; 
+  motorSet.motors[2].pid.setpoint = cmd.j3_torque; 
+
+
+
+// Data Out
+  armstatus_t data;
+  data.theta1 = angleCalc(&motorSet.motors[0]);
+  data.theta2 = angleCalc(&motorSet.motors[1]);
+  data.theta3 = angleCalc(&motorSet.motors[2]);
+  data.theta4 = angleCalc(&motorSet.motors[3]);
+
+  data.current1 = 0;
+  data.current2 = 0;
+  data.current3 = 0;
+
+  data.W1 = DMA_buffer[3]/4095.0f;
+  data.W2 = DMA_buffer[4]/4095.0f;
+
+  // printf("received data");
+
+  tud_vendor_write(&data,sizeof(armstatus_t));
   tud_vendor_n_write_flush(0);
+
 }
 
 // Invoked when device is mounted (configured)
@@ -1013,5 +1102,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-
