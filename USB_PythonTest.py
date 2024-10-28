@@ -71,36 +71,40 @@ interface = cfg[(0, 0)]  # (interface, alternate_setting)
 
 TorqueCommand = SetpointCmd()
 
+
+
+# Replace the endpoint addresses with your device's endpoint addresses
+TorqueCommand = SetpointCmd()
+bulk_out_endpoint = usb.util.find_descriptor( 
+    interface,
+    custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT
+)
+
+bulk_in_endpoint = usb.util.find_descriptor(
+    interface,
+    custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN
+)
+
+if bulk_out_endpoint is None or bulk_in_endpoint is None:
+    raise ValueError("Bulk endpoints not found")
+
 while(1):
 
-    # Replace the endpoint addresses with your device's endpoint addresses
-    bulk_out_endpoint = usb.util.find_descriptor( 
-        interface,
-        custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT
-    )
-
-    bulk_in_endpoint = usb.util.find_descriptor(
-        interface,
-        custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN
-    )
-
-    if bulk_out_endpoint is None or bulk_in_endpoint is None:
-        raise ValueError("Bulk endpoints not found")
-    bulk_out_endpoint.write(TorqueCommand.serialize())
-
-   
-
-    # Read data from the bulk IN endpoint
     data_in = bulk_in_endpoint.read(512)  # Adjust the size to match your endpoint's max packet size
     arm_status = ArmStatus.deserialize(data_in)
-
-
+    #Data out
     TorqueCommand.T1, TorqueCommand.T2, TorqueCommand.T3, x,y,z = deg2torque(arm_status.theta1, arm_status.theta2, arm_status.theta3,arm_status.W1,arm_status.W2)
+    
+    # Read data from the bulk IN endpoint
+    bulk_out_endpoint.write(TorqueCommand.serialize())
+
+
+
 
     # print(arm_status)
 
-    # print(TorqueCommand.T1, TorqueCommand.T2, TorqueCommand.T3, x,y,z)
-    print(arm_status.theta1, arm_status.theta2, arm_status.theta3, arm_status.theta4)
+    print(TorqueCommand.T1, TorqueCommand.T2, TorqueCommand.T3, x,y,z)
+    # print(arm_status.theta1, arm_status.theta2, arm_status.theta3, arm_status.theta4)
     
     # Write data to the bulk OUT endpoint (replace data with what you want to send)
 

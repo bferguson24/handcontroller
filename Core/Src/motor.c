@@ -69,7 +69,7 @@ void torqueControl(MotorSet_t motorSet, float W1,float W2){
 //Execute
 
 //i = 1 Start at J2/J3 Since 
-    for (int i = 1; i < motorSet.motorCount; i++){
+    for (int i = 2; i < motorSet.motorCount-1; i++){
     //Store Direction Value
 
         float direction = 1;
@@ -114,7 +114,7 @@ void motor_command(motor_t *Motor, float pwm_command,int Direction){
         HAL_GPIO_WritePin(Motor->dir_port, Motor->dir_pin,GPIO_PIN_SET);
     }
     uint32_t pulse = (Motor ->htim -> Init.Period) * DutyCycle;
-    __HAL_TIM_SET_COMPARE(Motor->htim, Motor->pwm_channel, pulse);
+   __HAL_TIM_SET_COMPARE(Motor->htim, Motor->pwm_channel, pulse);
 
   }
 
