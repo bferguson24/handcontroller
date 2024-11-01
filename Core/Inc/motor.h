@@ -39,7 +39,8 @@ typedef struct {
     float angle_2;
 
     float thetaCalc;
-  
+    
+
     // Temp
     ADC_HandleTypeDef *temp_ADC;
 
@@ -79,4 +80,4 @@ uint16_t read_position(motor_t *Motor);
 void torque_set(motor_t *Motor);
 void motor_command(motor_t *Motor, float pwm_command,int Direction);
 float angleCalc(motor_t *Motor);
-void torqueControl(MotorSet_t motorSet, float W1,float W2);
+void torqueControl(MotorSet_t* motorSet, float W1,float W2);

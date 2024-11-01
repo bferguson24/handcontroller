@@ -21,7 +21,7 @@ float angleCalc(motor_t *Motor){
 extern MotorSet_t motorSet;
 
 
-void torqueControl(MotorSet_t motorSet, float W1,float W2){
+void torqueControl(MotorSet_t* motorSet, float W1,float W2){
 
 //Joint Angles
 // float theta1raw = angleCalc(&motorSet.motors[0]);
@@ -39,14 +39,14 @@ void torqueControl(MotorSet_t motorSet, float W1,float W2){
     // motorSet.motors[1].theta_filtered = angleCalc(&motorSet.motors[1]);
     // float theta2_f = motorSet.motors[1].theta_filtered; 
 
-    for (int i = 0 ; i < motorSet.motorCount; i++){
-        angleCalc(&motorSet.motors[i]);
+    for (int i = 0 ; i < motorSet->motorCount; i++){
+        angleCalc(&motorSet->motors[i]);
     }
 
 
-    float theta2_f = motorSet.motors[1].theta_filtered;
+    float theta2_f = motorSet->motors[1].theta_filtered;
 
-    float theta3_f = motorSet.motors[2].theta_filtered;
+    float theta3_f = motorSet->motors[2].theta_filtered;
 
  
     // theta2_f = angleCalc(&motorSet.motors[1]);
@@ -55,37 +55,44 @@ void torqueControl(MotorSet_t motorSet, float W1,float W2){
 
 //Torque Set Points // FUTURE REV will calculate this externally
 
-    // motorSet.motors[0].pid.setpoint = W1 * cos(theta2_f * PI/180.0f) + W2 * cos((theta2_f + theta3_f) * PI/180.0f);
-    // motorSet.motors[1].pid.setpoint = -W1 * cos((theta2_f + theta3_f) * PI/180.0f);
-
+    motorSet->motors[1].pid.setpoint = W1 * cos(theta2_f * PI/180.0f) + W2 * cos((theta2_f + theta3_f) * PI/180.0f);
+    motorSet->motors[2].pid.setpoint = -W2 * cos((theta2_f + theta3_f) * PI/180.0f);
+    
 //Torque Process In Points
-
+ 
     //T2
-    motorSet.motors[1].pid.processIn = *motorSet.motors[1].currentCounts / 4095.0f;
+    motorSet->motors[1].pid.processIn = *motorSet->motors[1].currentCounts / 4095.0f;
 
     //T3
-    motorSet.motors[2].pid.processIn = *motorSet.motors[2].currentCounts / 4095.0f;
+    motorSet->motors[2].pid.processIn = *motorSet->motors[2].currentCounts / 4095.0f;
 
 //Execute
 
 //i = 1 Start at J2/J3 Since 
-    for (int i = 2; i < motorSet.motorCount-1; i++){
+    for (int i = 1; i < 2; i++){
     //Store Direction Value
 
         float direction = 1;
-        if (motorSet.motors[i].pid.setpoint < 0){
-            motorSet.motors[i].pid.setpoint = -motorSet.motors[i].pid.setpoint;
+        if (motorSet->motors[i].pid.setpoint < 0){
+            motorSet->motors[i].pid.setpoint = -motorSet->motors[i].pid.setpoint;
             direction = -1;
         }
 
     //PID Task
-        float pwm = PID_task(&motorSet.motors[i].pid,motorSet.motors[i].pid.processIn);
-        motorSet.motors[i].pwmCommand = pwm;
-        motor_command(&motorSet.motors[i],pwm,direction);
+        float pwm = PID_task(&motorSet->motors[i].pid,motorSet->motors[i].pid.processIn);
+        motorSet->motors[i].pwmCommand = pwm;
+        motor_command(&motorSet->motors[i],pwm,direction);
         }   
 
-}
+    // motorSet->motors[1].pwmCommand = W1;
 
+    // motorSet->motors[2].pwmCommand = W2;
+    
+    // motor_command(&motorSet->motors[1],motorSet->motors[1].pwmCommand,1);
+
+    // motor_command(&motorSet->motors[2],motorSet->motors[2].pwmCommand,-1);
+
+}
 
 
 

@@ -67,6 +67,7 @@ int i = 0;
 extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_adc2;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim5;
 extern PCD_HandleTypeDef hpcd_USB_OTG_HS;
 /* USER CODE BEGIN EV */
 
@@ -225,6 +226,32 @@ void TIM2_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM5 global interrupt.
+  */
+void TIM5_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM5_IRQn 0 */
+  extern float W1;
+  extern float W2;
+  extern MotorSet_t motorSet;
+  extern int16_t DMA_buffer[];
+
+
+  W1 = DMA_buffer[3]/4095.0f; 
+  W2 = DMA_buffer[4]/4095.0f; 
+
+  torqueControl(&motorSet, W1,W2);
+  
+
+
+  /* USER CODE END TIM5_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim5);
+  /* USER CODE BEGIN TIM5_IRQn 1 */
+
+  /* USER CODE END TIM5_IRQn 1 */
+}
+
+/**
   * @brief This function handles DMA2 stream0 global interrupt.
   */
 void DMA2_Stream0_IRQHandler(void)
@@ -297,25 +324,15 @@ float theta2_filtered;
 
 
 
+
+
  void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
   //volatile int i = 0;
   // extern ADC_HandleTypeDef hadc1;
   // extern ADC_HandleTypeDef hadc2;
-  
-  extern uint16_t DMA_buffer[];
-  extern MotorSet_t motorSet;
-  extern float W1;
-  extern float W2; 
-
-
-  W1 = DMA_buffer[3]/4095.0f; 
-  W2 = DMA_buffer[4]/4095.0f; 
-
-  torqueControl(motorSet, W1,W2);
-
-
 
 //motor_command(&motorSet.motors[0],W1,1);
+
 
 }
   

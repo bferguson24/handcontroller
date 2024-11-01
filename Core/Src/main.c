@@ -161,7 +161,7 @@ MotorSet_t motorSet = {
         //PID Parameters
         .pid = {
           .kp = 0.3,
-          .ki = 0.05,
+          .ki = 0.01,
           .kd = 0,
           .processMax = 1,
           .processMin = 0.01,
@@ -192,7 +192,7 @@ MotorSet_t motorSet = {
       //PID Parameters
       .pid = {
         .kp = 0.3,
-        .ki = 0.05,
+        .ki = 0.01,
         .kd = 0,
         .processMax = 1,
         .processMin = 0.01,
@@ -333,9 +333,9 @@ __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
 
 
 
-  HAL_TIM_Base_Start(&htim5);
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 5);
-  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)(DMA_buffer+5), 3);
+  HAL_TIM_Base_Start_IT(&htim5);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 8);
+  // HAL_ADC_Start_DMA(&hadc2, (uint32_t*)(DMA_buffer+5), 3);
 
 
   /* USER CODE END 2 */
@@ -433,7 +433,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T5_TRGO;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 5;
+  hadc1.Init.NbrOfConversion = 8;
   hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -483,6 +483,33 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_6;
   sConfig.Rank = ADC_REGULAR_RANK_5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = ADC_REGULAR_RANK_6;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_8;
+  sConfig.Rank = ADC_REGULAR_RANK_7;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_14;
+  sConfig.Rank = ADC_REGULAR_RANK_8;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -975,9 +1002,9 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
   cmd.j2_torque,
   cmd.j3_torque);
 
-  motorSet.motors[0].pid.setpoint = cmd.j1_torque; 
-  motorSet.motors[1].pid.setpoint = cmd.j2_torque; 
-  motorSet.motors[2].pid.setpoint = cmd.j3_torque; 
+  // motorSet.motors[0].pid.setpoint = cmd.j1_torque; 
+  // motorSet.motors[1].pid.setpoint = cmd.j2_torque; 
+  // motorSet.motors[2].pid.setpoint = cmd.j3_torque; 
 
 
 

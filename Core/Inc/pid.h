@@ -7,7 +7,7 @@
 
 typedef struct {
     float setpoint; /* the setpoint the PID controller should attempt to reach */
-    float processIn; /* the current value of the plant (position, current, etc) */
+    volatile float processIn; /* the current value of the plant (position, current, etc) */
     float error; /* the signed error between the current value and the setpoint */
     float ierror; /* the accumulated (integral) error */
     float derror; /* the change in error */

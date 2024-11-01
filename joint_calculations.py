@@ -86,7 +86,7 @@ def deg2torque(theta1deg,theta2deg,theta3deg,W1,W2):
     x,y,z = C[0],C[1],C[2]
 
 
-    return T1, T2, T3,x,y,z
+    return T1, -T2, T3,x,y,z
 
 
   # def plot_vectors_3d(vectors,titleName,colors=None):

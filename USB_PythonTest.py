@@ -21,6 +21,7 @@ class ArmStatus:
         self.theta2 = theta2
         self.theta3 = theta3
         self.theta4 = theta4
+        
 
         self.current1 = current1
         self.current2 = current2
@@ -34,6 +35,9 @@ class ArmStatus:
         # Unpack Data
         theta1, theta2, theta3, theta4, current1, current2, current3, W1, W2 = struct.unpack('fffffffff', byte_array)
         # Return an instance of ArmStatus with the unpacked values
+
+    
+
         return cls(theta1, theta2, theta3, theta4, current1, current2, current3,W1,W2)
     
     def __str__(self):
@@ -45,6 +49,8 @@ class ArmStatus:
             f"  Theta 4 {self.theta4:.2f}\n"
             f"  W1: {self.W1:.2f}\n"
             f"  W2: {self.W2:.2f}")
+
+
 
 
 
@@ -87,6 +93,8 @@ bulk_in_endpoint = usb.util.find_descriptor(
 
 if bulk_out_endpoint is None or bulk_in_endpoint is None:
     raise ValueError("Bulk endpoints not found")
+bulk_out_endpoint.write(TorqueCommand.serialize())
+
 
 while(1):
 
