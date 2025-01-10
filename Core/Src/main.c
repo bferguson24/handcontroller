@@ -29,6 +29,7 @@
 #include "stm32f7xx_hal_def.h"
 
 #include "motor.h"
+#include "controller.h"
 #include "stm32f7xx_hal_tim.h"
 
 #include "arm_math.h" 
@@ -118,102 +119,174 @@ static void MX_ADC2_Init(void);
 static void MX_USB_OTG_HS_PCD_Init(void);
 /* USER CODE BEGIN PFP */
 int16_t DMA_buffer[8];
+ float pwm_command;
+
+
+// // MOTOR Object Creation
+// MotorSet_t motorSet = {
+//   .motorCount = 4,
+//   .motors = {
+//     {  
+//     //MOTOR1 (No Power/Angle Only)
+
+//     //DMA Values
+//     .positionCounts = &DMA_buffer[7],
+//     .theta_filtered = 0,
+
+//     //Angle Calibration
+//     .angle_distance = 45.0f,
+//     .angle_1 = 2060.0f,
+//     .angle_2 = 1568.0f,
+//     },
+
+//       {  
+//     //MOTOR2
+
+//       //Config Parameters
+//       .htim = &htim9,
+//       .pwm_channel = TIM_CHANNEL_1,
+//       .dir_port = GPIOE,
+//       .dir_pin = GPIO_PIN_3,
+//       .fault_port = GPIOE,
+//       .fault_pin = GPIO_PIN_2,
+
+//       //DMA Values
+//       .positionCounts = &DMA_buffer[0],
+//       .currentCounts = &DMA_buffer[1],
+//       .theta_filtered = 0,
+
+//       //Angle Calibration
+//       .angle_distance = 90.0f,
+//       .angle_1 = 2191.0f,
+//       .angle_2 = 1107.0f,
+
+//         //PID Parameters
+//         .pid = {
+//           .kp = 0.3,
+//           .ki = 0.01,
+//           .kd = 0,
+//           .processMax = 1,
+//           .processMin = 0.01,
+//           //.setpoint = 0.1,    
+//         },
+//     },
+
+//     {
+//     //MOTOR3
+
+//       //Config Parameters
+//       .htim = &htim4,
+//       .pwm_channel = TIM_CHANNEL_3,
+//       .dir_port = GPIOE,
+//       .dir_pin = GPIO_PIN_6,
+
+
+//       //DMA Values
+//       .positionCounts = &DMA_buffer[2],
+//       .currentCounts = &DMA_buffer[5],
+//       .theta_filtered = 0,
+
+//       //Angle Calibration
+//       .angle_distance = -90.0f,
+//       .angle_1 = 1012.0f,
+//       .angle_2 = 1977.0f,
+
+//       //PID Parameters
+//       .pid = {
+//         .kp = 0.3,
+//         .ki = 0.01,
+//         .kd = 0,
+//         .processMax = 1,
+//         .processMin = 0.01,
+//         //.setpoint = 0.1,    
+//       }
+//     },
+
+//     {
+//     //MOTOR1 (No Power/Angle Only)
+
+//     //DMA Values
+//     .positionCounts = &DMA_buffer[6],
+//     .theta_filtered = 0,
+
+//     //Angle Calibration
+//     .angle_distance = 90.0f,
+//     .angle_1 = 2170.0f,
+//     .angle_2 = 3275.0f,
+//     }
+//   }
+// }; 
+
+
 
 
 // MOTOR Object Creation
-MotorSet_t motorSet = {
-  .motorCount = 4,
-  .motors = {
-    {  
-    //MOTOR1 (No Power/Angle Only)
+controller_t controller1 = {
+  .J1 = 
+  {
+  .positionCounts = &DMA_buffer[7],
+  
+  .theta_current = 0,
+  .angle_range = 45.0f,
+  .angle_start = 2060.0f,
+  .angle_end = 1568.0f,
+  },
 
-    //DMA Values
-    .positionCounts = &DMA_buffer[7],
-    .theta_filtered = 0,
+  .J2 = 
+  {
+  .htim = &htim9,
+  .pwm_channel = TIM_CHANNEL_1,
+  .dir_port = GPIOE,
+  .dir_pin = GPIO_PIN_3,
+  .fault_port = GPIOE,
+  .fault_pin = GPIO_PIN_2,
 
-    //Angle Calibration
-    .angle_distance = 45.0f,
-    .angle_1 = 2060.0f,
-    .angle_2 = 1568.0f,
-    },
+  .positionCounts = &DMA_buffer[0],
+  .currentCounts = &DMA_buffer[1],
+  .theta_current = 0,
+  .angle_range = 90.0f,
+  .angle_start = 1970.0f,
+  .angle_end = 964.0f,
 
-      {  
-    //MOTOR2
-
-      //Config Parameters
-      .htim = &htim9,
-      .pwm_channel = TIM_CHANNEL_1,
-      .dir_port = GPIOE,
-      .dir_pin = GPIO_PIN_3,
-      .fault_port = GPIOE,
-      .fault_pin = GPIO_PIN_2,
-
-      //DMA Values
-      .positionCounts = &DMA_buffer[0],
-      .currentCounts = &DMA_buffer[1],
-      .theta_filtered = 0,
-
-      //Angle Calibration
-      .angle_distance = 90.0f,
-      .angle_1 = 2191.0f,
-      .angle_2 = 1107.0f,
-
-        //PID Parameters
-        .pid = {
-          .kp = 0.3,
-          .ki = 0.01,
-          .kd = 0,
-          .processMax = 1,
-          .processMin = 0.01,
-          //.setpoint = 0.1,    
-        },
-    },
-
+  .pid = 
     {
-    //MOTOR3
-
-      //Config Parameters
-      .htim = &htim4,
-      .pwm_channel = TIM_CHANNEL_3,
-      .dir_port = GPIOE,
-      .dir_pin = GPIO_PIN_6,
-
-
-      //DMA Values
-      .positionCounts = &DMA_buffer[2],
-      .currentCounts = &DMA_buffer[5],
-      .theta_filtered = 0,
-
-      //Angle Calibration
-      .angle_distance = -90.0f,
-      .angle_1 = 1012.0f,
-      .angle_2 = 1977.0f,
-
-      //PID Parameters
-      .pid = {
-        .kp = 0.3,
-        .ki = 0.01,
-        .kd = 0,
-        .processMax = 1,
-        .processMin = 0.01,
-        //.setpoint = 0.1,    
-      }
-    },
-
-    {
-    //MOTOR1 (No Power/Angle Only)
-
-    //DMA Values
-    .positionCounts = &DMA_buffer[6],
-    .theta_filtered = 0,
-
-    //Angle Calibration
-    .angle_distance = 90.0f,
-    .angle_1 = 2170.0f,
-    .angle_2 = 3275.0f,
+      .kp = 0.3,
+      .ki = 0.01,
+      .kd = 0,
+      .processMax = 1,
+      .processMin = 0.01
     }
-  }
-}; 
+  },
+
+  .J3 = 
+  { 
+  .htim = &htim4,
+  .pwm_channel = TIM_CHANNEL_3,
+  .dir_port = GPIOE,
+  .dir_pin = GPIO_PIN_6,
+
+  .positionCounts = &DMA_buffer[2],
+  .currentCounts = &DMA_buffer[5],
+
+  .theta_current = 0,
+  .angle_range = -90.0f,
+  .angle_start = 1012.0f,
+  .angle_end = 1977.0f,
+
+  .pid = 
+    {
+      .kp = 0.3,
+      .ki = 0.01,
+      .kd = 0,
+      .processMax = 1,
+      .processMin = 0.01
+    }
+  } 
+
+};
+
+
+
 
 
 
@@ -317,11 +390,11 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
-__HAL_RCC_USB_OTG_HS_CLK_ENABLE();
+// __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
 
-  tud_init(BOARD_TUD_RHPORT);
+//   tud_init(BOARD_TUD_RHPORT);
 
-
+`
 
 
   // HAL_TIM_Base_Start(&htim2);
@@ -332,8 +405,7 @@ __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_SET);
 
 
-
-  HAL_TIM_Base_Start_IT(&htim5);
+  // HAL_TIM_Base_Start_IT(&htim5);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 8);
   // HAL_ADC_Start_DMA(&hadc2, (uint32_t*)(DMA_buffer+5), 3);
 
@@ -344,7 +416,17 @@ __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-  tud_task();
+  
+  float angleCorrection = controller1.J2.theta_current;
+
+  controller1.J2.pwmCommand = pwm_command * cos(-angleCorrection * PI/180.0f);
+
+  // pwm_set(&controller1.J2,controller1.J2.pwmCommand);
+
+  pwm_set(&controller1.J2,pwm_command);
+
+
+  // tud_task();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -425,17 +507,17 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
-  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T5_TRGO;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 8;
   hadc1.Init.DMAContinuousRequests = ENABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -445,7 +527,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -455,7 +537,6 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_2;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -553,7 +634,7 @@ static void MX_ADC2_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc2.Instance = ADC2;
-  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
   hadc2.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc2.Init.ContinuousConvMode = DISABLE;
@@ -623,7 +704,7 @@ static void MX_ADC3_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc3.Instance = ADC3;
-  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
   hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc3.Init.ContinuousConvMode = DISABLE;
@@ -720,7 +801,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 5400;
+  htim4.Init.Period = 10799;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
@@ -1010,10 +1091,10 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 
 // Data Out
   armstatus_t data;
-  data.theta1 = angleCalc(&motorSet.motors[0]);
-  data.theta2 = angleCalc(&motorSet.motors[1]);
-  data.theta3 = angleCalc(&motorSet.motors[2]);
-  data.theta4 = angleCalc(&motorSet.motors[3]);
+  // data.theta1 = angleCalc(&motorSet.motors[0]);
+  // data.theta2 = angleCalc(&motorSet.motors[1]);
+  // data.theta3 = angleCalc(&motorSet.motors[2]);
+  // data.theta4 = angleCalc(&motorSet.motors[3]);
 
   data.current1 = 0;
   data.current2 = 0;

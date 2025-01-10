@@ -7,6 +7,9 @@
 #include "filter.h"
 
 
+//Motor Directions
+#define CCW 0 
+#define CW 1
 
 
 typedef struct {
@@ -29,14 +32,15 @@ typedef struct {
     int16_t *currentCounts;
 
 
-    // Position
+  //Angle Calibration:
     int16_t *positionCounts;
-    float theta_filtered;
+
+    float theta_current;
 
 
-    float angle_distance;
-    float angle_1;
-    float angle_2;
+    float angle_range;
+    float angle_start;
+    float angle_end;
 
     float thetaCalc;
     
@@ -74,10 +78,40 @@ typedef struct{
 
 // Function Declarations
 
-void Motor_init(motor_t *Motor, uint16_t *external_buffer, size_t buffer_size);
-float read_current(motor_t *Motor);
-uint16_t read_position(motor_t *Motor);
-void torque_set(motor_t *Motor);
-void motor_command(motor_t *Motor, float pwm_command,int Direction);
-float angleCalc(motor_t *Motor);
-void torqueControl(MotorSet_t* motorSet, float W1,float W2);
+    /**
+    * @brief Motor Torque Control
+    *
+    * Motor torque control loop
+    * 
+    * @param motor Pointer to specific motor object. 
+    * @param torque Torque setpoint. Units expected in [Nm]
+    *               
+    * @return Error code in future? 
+    */
+    void torque_control(motor_t *motor, float torque);
+
+
+    /**
+    * @brief PWM motor set
+    *
+    * Set the corresponsing pwm and dir for the given motor object
+    * 
+    * @param motor Pointer to specific motor object. 
+    * @param pwm pwm duty cycle command, can be + or - 
+
+    *                
+    * @return Error code in future? 
+    */
+    void pwm_set(motor_t *Motor, float pwm_command);
+
+
+    /**
+    * @brief Motor angle conversion & calculation
+    *
+    * Set the corresponsing pwm and dir for the given motor object
+    * 
+    * @param motor Pointer to specific motor object. 
+    *               
+    * @return Error code in future? 
+    */
+    float angle_calc(motor_t *Motor);
