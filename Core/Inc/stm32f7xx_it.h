@@ -59,7 +59,6 @@ void ADC_IRQHandler(void);
 void TIM2_IRQHandler(void);
 void TIM5_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
-void DMA2_Stream2_IRQHandler(void);
 void OTG_HS_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
