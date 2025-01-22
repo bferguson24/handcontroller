@@ -466,9 +466,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
-// __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
-
-  // tud_init(BOARD_TUD_RHPORT);
+__HAL_RCC_USB_OTG_HS_CLK_ENABLE();
+tud_init(BOARD_TUD_RHPORT);
 
 
   // HAL_TIM_Base_Start(&htim2);
@@ -506,7 +505,7 @@ int main(void)
   // pwm_set(&controller1.J2,pwm_command);
 
 
-  // tud_task();
+  tud_task();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

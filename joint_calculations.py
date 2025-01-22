@@ -3,6 +3,12 @@ import numpy as np
 
 
 
+
+def calc_joint_torques(theta1, theta2, theta3, theta4)
+
+
+
+
 def deg2torque(theta1deg,theta2deg,theta3deg,W1,W2):
     #Parameters
     theta1 = np.deg2rad(theta1deg)
