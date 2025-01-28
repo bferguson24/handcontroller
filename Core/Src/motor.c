@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stdlib.h>  // Include stdlib.h for memory allocation
 #include "arm_math.h"
+#include <stdio.h>
+
 
 
 
@@ -12,8 +14,8 @@
 
 float angle_calc(motor_t *Motor){
     float theta_raw = (Motor->angle_start - *Motor->positionCounts)*(Motor->angle_range/(Motor->angle_end - Motor->angle_start));
-    float theta_filtered = LowPassFilter(theta_raw, Motor->theta_current, 0.9);
-    Motor->theta_current = theta_filtered;
+    float theta_filtered = LowPassFilter(theta_raw, Motor->theta, 0.9);
+    Motor->theta = theta_filtered;
     return theta_filtered;
 }
 
@@ -21,10 +23,80 @@ float angle_calc(motor_t *Motor){
 extern MotorSet_t motorSet;
 
 
-void torque_control(motor_t *motor, float torque){
-    // float Kpwm = 1.0; 
-    // &motor->pid.setpoint = torque
+void torque_control(motor_t *Motor, float torque){
+
+int status;
+int dir; 
+
+//Check Direction and store dir variable        //      if Torque == 0, turn motor OFF
+int motorState = (torque == 0) ? (status = MOTOR_OFF) : (status = MOTOR_ON);
+
+torque = (torque < 0) ? (dir = CW, -torque) : (dir = CCW, torque);
+
+if (motorState == MOTOR_ON){
+    //Current -> Torque:
+    //Kt in Nm / A
+    float kt = 0.0965;
+    float N = 10;
+
+    //Corrected Friction Torque
+    volatile float T_corr = torque + (Motor->frictionGain * torque + Motor->frictionOffset);
+    volatile float currentSet = T_corr / (kt * N);
+
+    //Make these parameters motor specific later
+
+    Motor->pid.setpoint = currentSet;
+    volatile float currentMeasured = *(Motor->currentCounts) * (3.3/4095.0f) * (1/10.0) * (1/Motor->Rsense);
+
+    Motor->pid.processIn = currentMeasured;
+    volatile float pwm_command = PID_task(&Motor->pid, Motor->pid.processIn);
+
+    Motor->pwmCommand = pwm_command;
+
+    pwm_set(Motor, pwm_command, dir);
+}
+
+else{
+    pwm_set(Motor, 0, dir);
+    printf("MOTOR OFF");
+    
+}
+
 };
+
+
+
+
+
+//Different PCB Definitions:
+
+// pcb_t board1 = {
+//     .frictionGain = 0.8127,
+//     .frictionOffset = 1.6,
+//     .Rsense = 0.0101827 
+// };
+
+
+// void current_control(motor_t *Motor, float current){
+
+// Motor->pid.setpoint = current;
+// volatile float currentMeasured = *(Motor->currentCounts) * (3.3/4095.0f) * (1/10.0) * (1/0.0108811);
+
+// Motor->pid.processIn = currentMeasured;
+// volatile float pwm_command = PID_task(&Motor->pid, Motor->pid.processIn);
+
+// Motor->pwmCommand = pwm_command;
+// pwm_set(Motor, pwm_command, direction);
+
+// };
+
+
+
+
+
+
+
+
 
 // void torqueControl(MotorSet_t* motorSet, float W1,float W2){
 
@@ -101,20 +173,20 @@ void torque_control(motor_t *motor, float torque){
 
 
 
-void pwm_set(motor_t *Motor, float pwm_command){
+void pwm_set(motor_t *Motor, float pwm_command, int direction){
 
-//Determine Direction of pwm command
-int dir;
+// //Determine Direction of pwm command
+// int dir;
 
-//Check Direction of pwm_command and store dir variable
-pwm_command = (pwm_command < 0) ? (dir = CW, -pwm_command) : (dir = CCW, pwm_command);
+// //Check Direction of pwm_command and store dir variable
+// pwm_command = (pwm_command < 0) ? (dir = CW, -pwm_command) : (dir = CCW, pwm_command);
 
-//Clip pwm_command between 0.01 and 1.0
-pwm_command = (pwm_command > 1.0f) ? 1.0f : (pwm_command < 0.01) ? 0.01f : pwm_command;
+// //Clip pwm_command between 0.01 and 1.0
+// pwm_command = (pwm_command > 1.0f) ? 1.0f : (pwm_command < 0.01) ? 0.01f : pwm_command;
 
 
 //Set Motor PWM & Direction Pins
-HAL_GPIO_WritePin(Motor->dir_port, Motor->dir_pin,dir);
+HAL_GPIO_WritePin(Motor->dir_port, Motor->dir_pin,direction);
 
 uint32_t pulse = (Motor ->htim -> Init.Period) * pwm_command;
 __HAL_TIM_SET_COMPARE(Motor->htim, Motor->pwm_channel, pulse);

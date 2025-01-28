@@ -1,4 +1,6 @@
+#pragma once
 #include "motor.h"
+
 
 typedef struct {
 
@@ -12,9 +14,35 @@ motor_t J4;
 motor_t J5;
 motor_t J6;
 
+float x; 
+float y; 
+float z;
+float pitch;
+
 }controller_t;
 
 extern controller_t controller1;
+
+
+typedef enum {
+    gc_ON = 1,
+    gc_OFF = 0 
+
+} commands_t;
+
+
+//Constants:
+
+
+extern const float L1;
+extern const float L2;
+extern const float LC1;
+extern const float LC2;
+extern const float ML1;
+extern const float ML2;
+extern const float MGIMB;
+extern const float gravity;
+
 
 //Function Declarations:
 
@@ -49,3 +77,6 @@ void grav_comp(controller_t *controller, float stiffness, float damping);
 * @return Error code in future? 
 */
 void force_input(controller_t *controller, float Fx, float Fy, float Fz);
+
+
+void positionCalc(controller_t *controller);

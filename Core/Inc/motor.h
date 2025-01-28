@@ -12,6 +12,18 @@
 #define CW 1
 
 
+#define MOTOR_OFF 0
+#define MOTOR_ON 1 
+
+
+typedef struct{
+
+float frictionOffset;
+float frictionGain;
+float Rsense;
+
+}pcb_t;
+
 typedef struct {
 
 //PIN/TIM/ADC Declarations:
@@ -31,19 +43,24 @@ typedef struct {
     // Current
     int16_t *currentCounts;
 
+    int16_t Kcurrent;
+    int16_t Kpwm; 
+
 
   //Angle Calibration:
     int16_t *positionCounts;
 
-    float theta_current;
+    float theta;
 
 
     float angle_range;
     float angle_start;
     float angle_end;
-
-    float thetaCalc;
     
+    float Rsense;
+    float frictionGain;
+    float frictionOffset;
+
 
     // Temp
     ADC_HandleTypeDef *temp_ADC;
@@ -65,6 +82,10 @@ typedef struct {
 // PID Struct Declaration
     pidController_t pid;
 
+
+// //Specific PCB Being used by motor:
+//     pcb_t board;
+
 } motor_t;
 
 
@@ -73,6 +94,12 @@ typedef struct{
     int motorCount;
 }MotorSet_t
 ;
+
+
+//PCB Declarations: 
+
+// extern pcb_t board1;
+
 
 
 
@@ -88,7 +115,7 @@ typedef struct{
     *               
     * @return Error code in future? 
     */
-    void torque_control(motor_t *motor, float torque);
+    void torque_control(motor_t *Motor, float torque_in_NM);
 
 
     /**
@@ -102,7 +129,7 @@ typedef struct{
     *                
     * @return Error code in future? 
     */
-    void pwm_set(motor_t *Motor, float pwm_command);
+    void pwm_set(motor_t *Motor, float pwm_command, int direction);
 
 
     /**
@@ -115,3 +142,8 @@ typedef struct{
     * @return Error code in future? 
     */
     float angle_calc(motor_t *Motor);
+
+
+
+
+    void current_control(motor_t *Motor, float current);

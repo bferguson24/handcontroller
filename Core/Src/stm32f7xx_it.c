@@ -250,22 +250,21 @@ void TIM5_IRQHandler(void)
   /* USER CODE BEGIN TIM5_IRQn 0 */
 
 
+extern float torqueSet;
 
 
-  extern float W1;
-  extern float W2;
+// torque_control(&controller1.J1,torqueSet);
 
-  
 
-  // extern MotorSet_t motorSet;
-  extern int16_t DMA_buffer[];
+angle_calc(&controller1.J1);
+angle_calc(&controller1.J2);
+angle_calc(&controller1.J3);
+angle_calc(&controller1.J4);
 
-  angle_calc(&controller1.J2);
 
-  W1 = DMA_buffer[3]/4095.0f; 
-  W2 = DMA_buffer[4]/4095.0f; 
 
-  // pwm_set(&controller1.J2,W1,0);
+
+  // pwm_set(&controller1.J2,W1,0);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 
 
 

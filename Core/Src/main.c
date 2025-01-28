@@ -92,6 +92,10 @@ float W1;
 float W2;
 float pwm1;
 float pwm2;
+float pwm_command;
+
+volatile float torqueSet;
+
 //text
 
 
@@ -114,108 +118,9 @@ static void MX_TIM5_Init(void);
 static void MX_USB_OTG_HS_PCD_Init(void);
 /* USER CODE BEGIN PFP */
 int16_t DMA_buffer[9];
- float pwm_command;
 
 
-// // MOTOR Object Creation
-// MotorSet_t motorSet = {
-//   .motorCount = 4,
-//   .motors = {
-//     {  
-//     //MOTOR1 (No Power/Angle Only)
-
-//     //DMA Values
-//     .positionCounts = &DMA_buffer[7],
-//     .theta_filtered = 0,
-
-//     //Angle Calibration
-//     .angle_distance = 45.0f,
-//     .angle_1 = 2060.0f,
-//     .angle_2 = 1568.0f,
-//     },
-
-//       {  
-//     //MOTOR2
-
-//       //Config Parameters
-//       .htim = &htim9,
-//       .pwm_channel = TIM_CHANNEL_1,
-//       .dir_port = GPIOE,
-//       .dir_pin = GPIO_PIN_3,
-//       .fault_port = GPIOE,
-//       .fault_pin = GPIO_PIN_2,
-
-//       //DMA Values
-//       .positionCounts = &DMA_buffer[0],
-//       .currentCounts = &DMA_buffer[1],
-//       .theta_filtered = 0,
-
-//       //Angle Calibration
-//       .angle_distance = 90.0f,
-//       .angle_1 = 2191.0f,
-//       .angle_2 = 1107.0f,
-
-//         //PID Parameters
-//         .pid = {
-//           .kp = 0.3,
-//           .ki = 0.01,
-//           .kd = 0,
-//           .processMax = 1,
-//           .processMin = 0.01,
-//           //.setpoint = 0.1,    
-//         },
-//     },
-
-//     {
-//     //MOTOR3
-
-//       //Config Parameters
-//       .htim = &htim4,
-//       .pwm_channel = TIM_CHANNEL_3,
-//       .dir_port = GPIOE,
-//       .dir_pin = GPIO_PIN_6,
-
-
-//       //DMA Values
-//       .positionCounts = &DMA_buffer[2],
-//       .currentCounts = &DMA_buffer[5],
-//       .theta_filtered = 0,
-
-//       //Angle Calibration
-//       .angle_distance = -90.0f,
-//       .angle_1 = 1012.0f,
-//       .angle_2 = 1977.0f,
-
-//       //PID Parameters
-//       .pid = {
-//         .kp = 0.3,
-//         .ki = 0.01,
-//         .kd = 0,
-//         .processMax = 1,
-//         .processMin = 0.01,
-//         //.setpoint = 0.1,    
-//       }
-//     },
-
-//     {
-//     //MOTOR1 (No Power/Angle Only)
-
-//     //DMA Values
-//     .positionCounts = &DMA_buffer[6],
-//     .theta_filtered = 0,
-
-//     //Angle Calibration
-//     .angle_distance = 90.0f,
-//     .angle_1 = 2170.0f,
-//     .angle_2 = 3275.0f,
-//     }
-//   }
-// }; 
-
-
-
-
-// MOTOR Object Creation
+// CONTROLLER
 controller_t controller1 = {
   .J1 = 
   {
@@ -228,11 +133,24 @@ controller_t controller1 = {
   .fault_pin = GPIO_PIN_2,
 
   .positionCounts = &DMA_buffer[0],
-  .currentCounts = &DMA_buffer[10],
-  .theta_current = 0,
-  .angle_range = 45.0f,
-  .angle_start = 2060.0f,
-  .angle_end = 1568.0f,
+  .currentCounts = &DMA_buffer[6],
+  
+  .angle_range = 90.0f,
+  .angle_start = 2087.0f,
+  .angle_end = 3107.0f,
+
+  .Rsense = 0.01081,
+  .frictionGain = 0.8127,
+  .frictionOffset = 1.6,
+
+   .pid = 
+    {
+      .kp = 0.01,
+      .ki = 0.02,
+      .kd = 0,
+      .processMax = 1,
+      .processMin = 0
+    }
   },
 
   .J2 = 
@@ -245,16 +163,18 @@ controller_t controller1 = {
   .fault_pin = GPIO_PIN_5,
 
   .positionCounts = &DMA_buffer[1],
-  .currentCounts = &DMA_buffer[11],
-  .theta_current = 0,
+  .currentCounts = &DMA_buffer[7],
+  .Rsense = 0.020002,
+
+
   .angle_range = 90.0f,
   .angle_start = 1970.0f,
   .angle_end = 964.0f,
 
   .pid = 
     {
-      .kp = 0.3,
-      .ki = 0.01,
+      .kp = 0.01,
+      .ki = 0.02,
       .kd = 0,
       .processMax = 1,
       .processMin = 0.01
@@ -265,13 +185,13 @@ controller_t controller1 = {
   { 
   .htim = &htim4,
   .pwm_channel = TIM_CHANNEL_1,
-  .dir_port = GPIOE,
-  .dir_pin = GPIO_PIN_6,
+  .dir_port = GPIOC,
+  .dir_pin = GPIO_PIN_15,
 
   .positionCounts = &DMA_buffer[2],
-  .currentCounts = &DMA_buffer[12],
+  .currentCounts = &DMA_buffer[8],
+  .Rsense = 0.00916581,
 
-  .theta_current = 0,
   .angle_range = -90.0f,
   .angle_start = 1012.0f,
   .angle_end = 1977.0f,
@@ -288,10 +208,10 @@ controller_t controller1 = {
 
   .J4 = 
   { 
-  // .htim = &htim4,
-  // .pwm_channel = TIM_CHANNEL_2,
-  // .dir_port = GPIOE,
-  // .dir_pin = GPIO_PIN_6,
+  .htim = &htim4,
+  .pwm_channel = TIM_CHANNEL_2,
+  .dir_port = GPIOF,
+  .dir_pin = GPIO_PIN_2,
 
   .positionCounts = &DMA_buffer[3],
   // .currentCounts = &DMA_buffer[12],
@@ -313,10 +233,10 @@ controller_t controller1 = {
 
   .J5 = 
   { 
-  // .htim = &htim4,
-  // .pwm_channel = TIM_CHANNEL_2,
-  // .dir_port = GPIOE,
-  // .dir_pin = GPIO_PIN_6,
+  .htim = &htim4,
+  .pwm_channel = TIM_CHANNEL_2,
+  .dir_port = GPIOE,
+  .dir_pin = GPIO_PIN_6,
 
   .positionCounts = &DMA_buffer[4],
   // .currentCounts = &DMA_buffer[12],
@@ -476,6 +396,7 @@ tud_init(BOARD_TUD_RHPORT);
   HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_4);
 
+  HAL_TIM_Base_Start_IT(&htim5);
 
   // HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_3);
   
@@ -497,21 +418,25 @@ tud_init(BOARD_TUD_RHPORT);
   // float angleCorrection = controller1.J1.theta_current;
 
   // controller1.J2.pwmCommand = pwm_command * cos(-angleCorrection * PI/180.0f);
-
+// currentSet = 0.5;
   // pwm_set(&controller1.J1,pwm_command);
   // pwm_set(&controller1.J2,pwm_command);
-  // pwm_set(&controller1.J3,pwm_command);
+  // pwm_set(&controller1.J3,pwm_command,1);
 
-  // pwm_set(&controller1.J2,pwm_command);
+  // pwm_set(&controller1.J2,pwm_command,1);
+
+  // pwm_set(&controller1.J1,pwm_command,1);
 
 
-  tud_task();
+  
+
+  // tud_task();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
+} 
 
 /**
   * @brief System Clock Configuration
@@ -1078,10 +1003,10 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 
 // Data Out
   armstatus_t data;
-  data.theta1 = controller1.J1.theta_current;
-  data.theta2 = controller1.J2.theta_current;
-  data.theta3 = controller1.J3.theta_current;
-  data.theta4 = controller1.J4.theta_current;
+  data.theta1 = controller1.J1.theta;
+  data.theta2 = controller1.J2.theta;
+  data.theta3 = controller1.J3.theta;
+  data.theta4 = controller1.J4.theta;
 
   data.current1 = 0;
   data.current2 = 0;
