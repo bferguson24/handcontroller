@@ -8,8 +8,8 @@
 
 
 //Motor Directions
-#define CCW 0 
-#define CW 1
+#define CCW 1 
+#define CW -1
 
 
 #define MOTOR_OFF 0
@@ -35,6 +35,9 @@ typedef struct {
     // Dir
     GPIO_TypeDef *dir_port;
     uint16_t dir_pin;
+
+    //Motor Positive Direction:
+    int motorDir; 
     
     // Fault
     GPIO_TypeDef *fault_port;

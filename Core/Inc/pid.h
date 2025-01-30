@@ -24,4 +24,3 @@ typedef struct {
 
 void PID_init(pidController_t *p);
 float PID_task(pidController_t* tuning, float processIn);
-float clip(float val, float min, float max);

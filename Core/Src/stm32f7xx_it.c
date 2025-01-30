@@ -249,29 +249,24 @@ void TIM5_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM5_IRQn 0 */
 
+// extern float torqueSet;
+// torque_control(&controller1.J3,torqueSet);
 
-extern float torqueSet;
+extern commands_t controllerStatus; 
 
+extern float T2; 
+extern float T3;
 
-// torque_control(&controller1.J1,torqueSet);
-
-
-angle_calc(&controller1.J1);
-angle_calc(&controller1.J2);
-angle_calc(&controller1.J3);
-angle_calc(&controller1.J4);
-
+// torque_control(&controller1.J2, T2);
+// torque_control(&controller1.J3, T3);
 
 
+// //Grav Comp Command
+grav_comp(&controller1, controller1.gc_status);
 
-  // pwm_set(&controller1.J2,W1,0);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+// //Calculate Position 
+position_calc(&controller1);
 
-
-
-  // torque_control(&controller1.J1, 0);
-
-  // torqueControl(&motorSet, W1,W2);
-  
 
 
   /* USER CODE END TIM5_IRQn 0 */

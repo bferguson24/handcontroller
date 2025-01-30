@@ -15,8 +15,8 @@
 float angle_calc(motor_t *Motor){
     float theta_raw = (Motor->angle_start - *Motor->positionCounts)*(Motor->angle_range/(Motor->angle_end - Motor->angle_start));
     float theta_filtered = LowPassFilter(theta_raw, Motor->theta, 0.9);
-    Motor->theta = theta_filtered;
-    return theta_filtered;
+    // Motor->theta = theta_filtered;
+    return theta_raw;
 }
 
 
@@ -53,11 +53,19 @@ if (motorState == MOTOR_ON){
 
     Motor->pwmCommand = pwm_command;
 
+    //Added Flip Flop motorDir Parameter to account for motor direction w different cables
+
+    //Sign Change if needed
+    dir = dir * Motor->motorDir; 
+
+    //Flip dir to 0 or 1;
+    dir = (dir < 0) ? (dir == 0) : (dir == 1);
+
     pwm_set(Motor, pwm_command, dir);
 }
 
 else{
-    pwm_set(Motor, 0, dir);
+    pwm_set(Motor, 0, Motor->motorDir * dir);
     printf("MOTOR OFF");
     
 }

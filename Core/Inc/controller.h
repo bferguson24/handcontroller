@@ -2,6 +2,12 @@
 #include "motor.h"
 
 
+typedef enum {
+    gc_ON = 1,
+    gc_OFF = 0 
+
+} commands_t;
+
 typedef struct {
 
 //x/y/z Motors
@@ -19,16 +25,36 @@ float y;
 float z;
 float pitch;
 
+
+commands_t gc_status;
+float gc_scale_T2; 
+float gc_scale_T3; 
+
+float trigger_zero; 
+float trigger_on; 
+float trigger_normal;
+
+float T1;
+float T2; 
+float T3; 
+
+
+int clutch_status;
+GPIO_TypeDef *clutch_port;
+uint16_t clutch_pin;
+
+
+
+int16_t *raw_trigger_reading; 
+
+
+
 }controller_t;
 
+
+
+
 extern controller_t controller1;
-
-
-typedef enum {
-    gc_ON = 1,
-    gc_OFF = 0 
-
-} commands_t;
 
 
 //Constants:
@@ -59,7 +85,7 @@ extern const float gravity;
 *               
 * @return Error code in future? 
 */
-void grav_comp(controller_t *controller, float stiffness, float damping);
+void grav_comp(controller_t *controller, commands_t status);
 
 
 
@@ -79,4 +105,4 @@ void grav_comp(controller_t *controller, float stiffness, float damping);
 void force_input(controller_t *controller, float Fx, float Fy, float Fz);
 
 
-void positionCalc(controller_t *controller);
+void position_calc(controller_t *controller);

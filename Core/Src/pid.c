@@ -1,4 +1,5 @@
 #include "pid.h"
+#include "utility.h" 
 
 void PID_init(pidController_t *p)
 {
@@ -55,9 +56,4 @@ float PID_task(pidController_t* p, float processIn)
     p->lastError = p->error;
 
     return output;
-}
-
-float clip(float val, float min, float max)
-{
-    return fminf(fmaxf(val, min), max);
 }

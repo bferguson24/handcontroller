@@ -95,6 +95,12 @@ float pwm2;
 float pwm_command;
 
 volatile float torqueSet;
+float T2;
+float T3; 
+
+//Grav Comp on/off 1/0
+commands_t controllerStatus; 
+
 
 //text
 
@@ -117,7 +123,7 @@ static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_USB_OTG_HS_PCD_Init(void);
 /* USER CODE BEGIN PFP */
-int16_t DMA_buffer[9];
+int16_t DMA_buffer[10];
 
 
 // CONTROLLER
@@ -128,16 +134,17 @@ controller_t controller1 = {
   .htim = &htim4,
   .pwm_channel = TIM_CHANNEL_4,
   .dir_port = GPIOE,
+  .motorDir = 1,
   .dir_pin = GPIO_PIN_3,
   .fault_port = GPIOE,
   .fault_pin = GPIO_PIN_2,
 
-  .positionCounts = &DMA_buffer[0],
+  .positionCounts = &DMA_buffer[3],
   .currentCounts = &DMA_buffer[6],
   
-  .angle_range = 90.0f,
-  .angle_start = 2087.0f,
-  .angle_end = 3107.0f,
+  .angle_range = -45.0f,
+  .angle_start = 2053.0f,
+  .angle_end = 1480.0f,
 
   .Rsense = 0.01081,
   .frictionGain = 0.8127,
@@ -156,19 +163,23 @@ controller_t controller1 = {
   .J2 = 
   {
   .htim = &htim4,
-  .pwm_channel = TIM_CHANNEL_3,
+  .pwm_channel = TIM_CHANNEL_4,
   .dir_port = GPIOE,
-  .dir_pin = GPIO_PIN_6,
+  .dir_pin = GPIO_PIN_3,
+  .motorDir = 1,
   .fault_port = GPIOE,
-  .fault_pin = GPIO_PIN_5,
+  .fault_pin = GPIO_PIN_2,
 
-  .positionCounts = &DMA_buffer[1],
-  .currentCounts = &DMA_buffer[7],
-  .Rsense = 0.020002,
+  .positionCounts = &DMA_buffer[0],
+  .currentCounts = &DMA_buffer[6],
+
+  .Rsense = 0.01752467,
+  .frictionGain = 0.1473,
+  .frictionOffset = 1.1673,
 
 
   .angle_range = 90.0f,
-  .angle_start = 1970.0f,
+  .angle_start = 2051.0f,
   .angle_end = 964.0f,
 
   .pid = 
@@ -184,22 +195,27 @@ controller_t controller1 = {
   .J3 = 
   { 
   .htim = &htim4,
-  .pwm_channel = TIM_CHANNEL_1,
+  .pwm_channel = TIM_CHANNEL_2,
   .dir_port = GPIOC,
   .dir_pin = GPIO_PIN_15,
+  .motorDir = 1,
+
 
   .positionCounts = &DMA_buffer[2],
   .currentCounts = &DMA_buffer[8],
-  .Rsense = 0.00916581,
+
+  .Rsense = 0.019512,
+  .frictionGain = 0.1946,
+  .frictionOffset = 0.86,
 
   .angle_range = -90.0f,
-  .angle_start = 1012.0f,
-  .angle_end = 1977.0f,
+  .angle_start = 3087.0f,
+  .angle_end = 2066.0f,
 
   .pid = 
     {
-      .kp = 0.3,
-      .ki = 0.01,
+      .kp = 0.01,
+      .ki = 0.02,
       .kd = 0,
       .processMax = 1,
       .processMin = 0.01
@@ -209,17 +225,20 @@ controller_t controller1 = {
   .J4 = 
   { 
   .htim = &htim4,
-  .pwm_channel = TIM_CHANNEL_2,
+  .pwm_channel = TIM_CHANNEL_1,
   .dir_port = GPIOF,
   .dir_pin = GPIO_PIN_2,
+  .motorDir = 1,
 
-  .positionCounts = &DMA_buffer[3],
-  // .currentCounts = &DMA_buffer[12],
 
-  // .theta_current = 0,
-  // .angle_range = -90.0f,
-  // .angle_start = 1012.0f,
-  // .angle_end = 1977.0f,
+  .positionCounts = &DMA_buffer[4],
+
+  .angle_range = 90.0f,
+  .angle_start = 1719.0f,
+  .angle_end = 605.0f,
+
+
+  
 
   // .pid = 
   //   {
@@ -279,7 +298,17 @@ controller_t controller1 = {
   //     .processMax = 1,
   //     .processMin = 0.01
   //   }
-  } 
+  },
+  .gc_scale_T2 = 1,
+  .gc_scale_T3 = 1,
+
+  //Button Inputs
+  .raw_trigger_reading = &DMA_buffer[5], 
+  .clutch_port = GPIOB,
+  .clutch_pin = GPIO_PIN_9,
+  .trigger_on = 2000.0f,
+  .trigger_zero = 2400.0f
+
 
 };
 
@@ -314,24 +343,22 @@ controller_t controller1 = {
 uint8_t rtt_buffer[1024];
 
 typedef struct {
-  float j1_torque;
-  float j2_torque;
-  float j3_torque;
+
+  commands_t gc_status;
+
+  // float j1_torque;
+  // float j2_torque;
+  // float j3_torque;
 } setpoint_cmd_t;
 
 
 typedef struct {
-  float theta1;
-  float theta2;
-  float theta3;
-  float theta4;
-
-  float current1;
-  float current2;
-  float current3;
-
-  float W1;
-  float W2;
+  float x; 
+  float y; 
+  float z;
+  float pitch;
+  
+  int clutch_status;
 } armstatus_t;
 
 
@@ -393,6 +420,7 @@ tud_init(BOARD_TUD_RHPORT);
   // HAL_TIM_Base_Start(&htim2);
   
   HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_4);
 
@@ -404,7 +432,7 @@ tud_init(BOARD_TUD_RHPORT);
 
 
   // HAL_TIM_Base_Start_IT(&htim5);
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 9);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_buffer, 10);
   // HAL_ADC_Start_DMA(&hadc2, (uint32_t*)(DMA_buffer+5), 3);
 
 
@@ -419,13 +447,11 @@ tud_init(BOARD_TUD_RHPORT);
 
   // controller1.J2.pwmCommand = pwm_command * cos(-angleCorrection * PI/180.0f);
 // currentSet = 0.5;
-  // pwm_set(&controller1.J1,pwm_command);
-  // pwm_set(&controller1.J2,pwm_command);
-  // pwm_set(&controller1.J3,pwm_command,1);
-
-  // pwm_set(&controller1.J2,pwm_command,1);
-
   // pwm_set(&controller1.J1,pwm_command,1);
+  // pwm_set(&controller1.J2,pwm_command,1);
+  // pwm_set(&controller1.J3,pwm_command,1);
+  // pwm_set(&controller1.J4,pwm_command,1);
+
 
 
   
@@ -436,7 +462,7 @@ tud_init(BOARD_TUD_RHPORT);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-} 
+}
 
 /**
   * @brief System Clock Configuration
@@ -519,7 +545,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 9;
+  hadc1.Init.NbrOfConversion = 10;
   hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -604,6 +630,15 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_12;
   sConfig.Rank = ADC_REGULAR_RANK_9;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Rank = ADC_REGULAR_RANK_10;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -765,6 +800,10 @@ static void MX_TIM4_Init(void)
   {
     Error_Handler();
   }
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
@@ -922,6 +961,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PE1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
@@ -985,15 +1036,17 @@ uint8_t bulk_in_buffer[BULK_EP_SIZE] = "Hello from TinyUSB";
 void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 {
 //Data IN
-  volatile int i = 0;
   setpoint_cmd_t cmd;
   memcpy(&cmd, buffer, bufsize);
   tud_vendor_read_flush();
 
-  printf("Received setpoint! j1 = %f, j2 = %f, j3 = %f", 
-  cmd.j1_torque,
-  cmd.j2_torque,
-  cmd.j3_torque);
+//Toggle on/off grav comp;
+  controller1.gc_status = cmd.gc_status; 
+
+  // printf("Received setpoint! j1 = %f, j2 = %f, j3 = %f", 
+  // cmd.j1_torque,
+  // cmd.j2_torque,
+  // cmd.j3_torque);
 
   // motorSet.motors[0].pid.setpoint = cmd.j1_torque; 
   // motorSet.motors[1].pid.setpoint = cmd.j2_torque; 
@@ -1003,17 +1056,12 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 
 // Data Out
   armstatus_t data;
-  data.theta1 = controller1.J1.theta;
-  data.theta2 = controller1.J2.theta;
-  data.theta3 = controller1.J3.theta;
-  data.theta4 = controller1.J4.theta;
+  data.x = controller1.x;
+  data.y = controller1.y;
+  data.z = controller1.z; 
+  data.pitch = controller1.pitch; 
+  data.clutch_status = controller1.clutch_status;
 
-  data.current1 = 0;
-  data.current2 = 0;
-  data.current3 = 0;
-
-  data.W1 = DMA_buffer[3]/4095.0f;
-  data.W2 = DMA_buffer[4]/4095.0f;
 
   // printf("received data");
 
