@@ -352,13 +352,15 @@ typedef struct {
 } setpoint_cmd_t;
 
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   float x; 
   float y; 
   float z;
   float pitch;
-  
-  int clutch_status;
+  float trigger;
+
+  uint8_t clutch_status;
+
 } armstatus_t;
 
 
@@ -456,7 +458,7 @@ tud_init(BOARD_TUD_RHPORT);
 
   
 
-  // tud_task();
+  tud_task();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -1037,8 +1039,8 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 {
 //Data IN
   setpoint_cmd_t cmd;
-  memcpy(&cmd, buffer, bufsize);
-  tud_vendor_read_flush();
+  memcpy(&cmd, buffer, sizeof(setpoint_cmd_t));
+  tud_vendor_read_flush(); // unstall the IN endpoint
 
 //Toggle on/off grav comp;
   controller1.gc_status = cmd.gc_status; 
@@ -1060,13 +1062,16 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
   data.y = controller1.y;
   data.z = controller1.z; 
   data.pitch = controller1.pitch; 
+  data.trigger = controller1.trigger_normal;
+  
   data.clutch_status = controller1.clutch_status;
 
 
   // printf("received data");
-
+  volatile int size = sizeof(armstatus_t);
   tud_vendor_write(&data,sizeof(armstatus_t));
   tud_vendor_n_write_flush(0);
+
 
 }
 

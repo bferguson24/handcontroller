@@ -1,17 +1,17 @@
 import usb.core
 import usb.util
 import struct
-from joint_calculations import *
+# from joint_calculations import *
 import json
-import helpers
+# import helpers
 
 
 # helpers.do_help()
 
 
-from websockets.sync.client import connect
-websocket = connect("ws://localhost:8888")
-print('Connected')
+# from websockets.sync.client import connect
+# websocket = connect("ws://localhost:8888")
+# print('Connected')
 
 # Define the Python equivalent of the C struct
 class SetpointCmd:
@@ -26,39 +26,35 @@ class SetpointCmd:
     
     
 class ArmStatus:
-    def __init__(self, theta1, theta2, theta3, theta4, current1, current2, current3, W1, W2):
-        self.theta1 = theta1
-        self.theta2 = theta2
-        self.theta3 = theta3
-        self.theta4 = theta4
-        
+    def __init__(self, x, y , z, elbow_angle, clutch_status, trigger_amount):
 
-        self.current1 = current1
-        self.current2 = current2
-        self.current3 = current3
+    #Floats
+        self.x = x
+        self.y = y
+        self.z = z
+        self.elbow_angle = elbow_angle
+        self.trigger_amount = trigger_amount
 
-        self.W1 = W1
-        self.W2 = W2
+    #Bool
+        self.clutch_status = clutch_status  
 
     @classmethod
     def deserialize(cls, byte_array):
         # Unpack Data
-        theta1, theta2, theta3, theta4, current1, current2, current3, W1, W2 = struct.unpack('fffffffff', byte_array)
+        x, y, z, elbow_angle, trigger_amount, clutch_status = struct.unpack('fffff?', byte_array)
         # Return an instance of ArmStatus with the unpacked values
 
-    
 
-        return cls(theta1, theta2, theta3, theta4, current1, current2, current3,W1,W2)
+        return cls(x, y, z, elbow_angle, trigger_amount, clutch_status)
     
     def __str__(self):
-    # Define a nicely formatted string for printing
-        return (f"ArmStatus:\n"
-            f"  Theta 1: {self.theta1:.2f}\n"
-            f"  Theta 2: {self.theta2:.2f}\n"
-            f"  Theta 3: {self.theta3:.2f}\n"
-            f"  Theta 4 {self.theta4:.2f}\n"
-            f"  W1: {self.W1:.2f}\n"
-            f"  W2: {self.W2:.2f}")
+        return (f"Arm Status:\n"
+                f"  X: {self.x:.2f}\n"
+                f"  Y: {self.y:.2f}\n"
+                f"  Z: {self.z:.2f}\n"
+                f"  Elbow Angle: {self.elbow_angle:.2f}\n"
+                f"  Trigger Amount: {self.trigger_amount:.2f}\n"
+                f"  Clutch Status: {'CLUTCH ON' if self.clutch_status else 'CLUTCH OFF'}")
 
 
 
@@ -91,6 +87,7 @@ TorqueCommand = SetpointCmd()
 
 # Replace the endpoint addresses with your device's endpoint addresses
 TorqueCommand = SetpointCmd()
+
 bulk_out_endpoint = usb.util.find_descriptor( 
     interface,
     custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT
@@ -108,26 +105,30 @@ bulk_out_endpoint.write(TorqueCommand.serialize())
 
 while(1):
 
-    data_in = bulk_in_endpoint.read(512)  # Adjust the size to match your endpoint's max packet size
+    data_in = bulk_in_endpoint.read(21)  # Adjust the size to match your endpoint's max packet size
     arm_status = ArmStatus.deserialize(data_in)
     #Data out
-    TorqueCommand.T1, TorqueCommand.T2, TorqueCommand.T3, x,y,z = deg2torque(arm_status.theta1, arm_status.theta2, arm_status.theta3,arm_status.W1,arm_status.W2)
+    # TorqueCommand.T1, TorqueCommand.T2, TorqueCommand.T3, x,y,z = deg2torque(arm_status.theta1, arm_status.theta2, arm_status.theta3,arm_status.W1,arm_status.W2)
     
     # Read data from the bulk IN endpoint
+
+    #Don't know if we need to send any data back???
     bulk_out_endpoint.write(TorqueCommand.serialize())
-
-
 
 
     # print(arm_status)
 
-    print(TorqueCommand.T1, TorqueCommand.T2, TorqueCommand.T3, x,y,z)
-    # print(arm_status.theta1, arm_status.theta2, arm_status.theta3, arm_status.theta4)
+    print(arm_status.x, arm_status.y, arm_status.z, arm_status.elbow_angle, arm_status.trigger_amount, arm_status.clutch_status)
     
-    # Write data to the bulk OUT endpoint (replace data with what you want to send)
-
     #Data Transmit
-    websocket.send(json.dumps({'data': [x,y,z,theta4]}))
+    # websocket.send(json.dumps({'data': [
+    #     arm_status.x,
+    #     arm_status.y, 
+    #     arm_status.z, 
+    #     arm_status.elbow_angle, 
+    #     arm_status.trigger_amount, 
+    #     arm_status.clutch_status
+    # ]}))
 
 # Cleanup
 usb.util.dispose_resources(dev)
