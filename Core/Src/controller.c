@@ -97,7 +97,8 @@ float theta4_0 = angle_calc(&controller->J4);
 float theta1 = theta1_0;
 float theta2 = theta2_0; 
 float theta3 = theta3_0 - theta2_0;
-float theta4 = theta4_0 - theta3_0;
+float theta4 = theta4_0 + theta2 + theta3;
+
 //Update Angles
 controller->J1.theta = theta1;
 controller->J2.theta = theta2;
@@ -110,13 +111,21 @@ theta2 = theta2 * PI/180;
 theta3 = theta3 * PI/180;
 theta4 = theta4 * PI/180;
 
-    controller->x = (L1 * cos(theta2) + L2 * cos(theta2 + theta3)) * cos(theta1); 
+//Convert to Mira Frame:
 
-    controller->y = (L1 * cos(theta2) + L1 * cos(theta2 + theta3)) * sin(theta1); 
+float x = L1 * sin(theta2) + L2 * sin(theta2 + theta3)        - controller->homeX;
+float y = - (L1 * cos(theta2) + L1 * cos(theta2 + theta3)) * sin(theta1) - controller->homeY;
+float z = (L1 * cos(theta2) + L2 * cos(theta2 + theta3)) * cos(theta1) - controller->homeZ;
 
-    controller->z = L1 * sin(theta2) + L2 * sin(theta2 + theta3);
 
-    controller->pitch = theta4;
+controller->x = controller->frameScale * (controller->miraXoff + x);
+controller->y = controller->frameScale * (controller->miraYoff + y);
+controller->z = controller->frameScale * (controller->miraZoff + z);
+
+controller->pitch = theta4 * (180/PI) - controller->pitchOffset;
+
+
+
 }
 
 void force_input(controller_t *controller, float Fx, float Fy, float Fz){

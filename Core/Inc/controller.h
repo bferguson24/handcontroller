@@ -39,6 +39,19 @@ float T2;
 float T3; 
 
 
+//Kinematics:
+float homeX;
+float homeY;
+float homeZ;
+
+float miraXoff; 
+float miraYoff;
+float miraZoff;
+
+
+float frameScale;
+float pitchOffset;
+
 int clutch_status;
 GPIO_TypeDef *clutch_port;
 uint16_t clutch_pin;

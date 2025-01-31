@@ -116,9 +116,9 @@ while(1):
     bulk_out_endpoint.write(TorqueCommand.serialize())
 
 
-    # print(arm_status)
+    print(arm_status)
 
-    print(arm_status.x, arm_status.y, arm_status.z, arm_status.elbow_angle, arm_status.trigger_amount, arm_status.clutch_status)
+    # print(arm_status.x, arm_status.y, arm_status.z, arm_status.elbow_angle, arm_status.trigger_amount, arm_status.clutch_status)
     
     #Data Transmit
     # websocket.send(json.dumps({'data': [

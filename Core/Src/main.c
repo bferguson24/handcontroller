@@ -299,15 +299,29 @@ controller_t controller1 = {
   //     .processMin = 0.01
   //   }
   },
-  .gc_scale_T2 = 1,
-  .gc_scale_T3 = 1,
+  .gc_scale_T2 = 0.4,
+  .gc_scale_T3 = 0.4,
 
   //Button Inputs
   .raw_trigger_reading = &DMA_buffer[5], 
   .clutch_port = GPIOB,
   .clutch_pin = GPIO_PIN_9,
   .trigger_on = 2000.0f,
-  .trigger_zero = 2400.0f
+  .trigger_zero = 2400.0f,
+
+  .frameScale = 1.0,
+
+  .homeX = 0,
+  .homeY = 0, 
+  .homeZ = 370.0f,
+
+  .miraXoff = 70, 
+  .miraYoff = -28,
+  .miraZoff = -76.5,
+
+  .pitchOffset = 50.0
+
+
 
 
 };
