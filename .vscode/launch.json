@@ -6,11 +6,13 @@
             "name": "Debug",
             "request": "launch",
             "type": "cortex-debug",
-            "device": "stm32f723ze",
             "runToEntryPoint": "main",
             "showDevDebugOutput": "none",
-            "servertype": "jlink",
+            "servertype": "stlink",
+            "armToolchainPath": "C:\\ProgramData\\chocolatey\\bin",
+            "stm32cubeprogrammer": "C:\\ST\\STM32CubeCLT_1.17.0\\STM32CubeProgrammer\\bin",
             "preLaunchTask": "Build",
+            "device": "stm32f723ze",
             "svdFile": "STM32F723.svd",
             "rttConfig": {
                 "enabled": true,
@@ -22,8 +24,7 @@
                         "type": "console"
                     }
                 ]
-            },
+            }
         }
-    
     ]
 }

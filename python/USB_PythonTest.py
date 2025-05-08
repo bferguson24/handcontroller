@@ -51,9 +51,6 @@ class ArmStatus:
             f"  W2: {self.W2:.2f}")
 
 
-
-
-
 # Example usage
 
 # Find the USB device (replace with your device's VID and PID)
@@ -93,6 +90,12 @@ bulk_in_endpoint = usb.util.find_descriptor(
 
 if bulk_out_endpoint is None or bulk_in_endpoint is None:
     raise ValueError("Bulk endpoints not found")
+
+#Make sure you write first! This triggers callback function to write, which returns data.
+
+# IF you dont do this data wont ever be written back so you'll get stuck in a loop while Its waitng for data 
+
+
 bulk_out_endpoint.write(TorqueCommand.serialize())
 
 

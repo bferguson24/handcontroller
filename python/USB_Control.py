@@ -1,6 +1,7 @@
 import usb.core
 import usb.util
 import struct
+import time
 # from joint_calculations import *
 import json
 # import helpers
@@ -9,9 +10,9 @@ import json
 # helpers.do_help()
 
 
-# from websockets.sync.client import connect
-# websocket = connect("ws://localhost:8888")
-# print('Connected')
+from websockets.sync.client import connect
+websocket = connect("ws://localhost:8081")
+print('Connected')
 
 # Define the Python equivalent of the C struct
 class SetpointCmd:
@@ -57,7 +58,37 @@ class ArmStatus:
                 f"  Clutch Status: {'CLUTCH ON' if self.clutch_status else 'CLUTCH OFF'}")
 
 
+def read_write_data(size_data_in, torque_out): 
+    data_in = bulk_in_endpoint.read(size_data_in)  # Adjust the size to match your endpoint's max packet size
+    arm_status = ArmStatus.deserialize(data_in)
 
+    bulk_out_endpoint.write(torque_out.serialize())
+    return arm_status
+
+def average_data(size_data_in, data_out, sample_size):
+    total_x = total_y = total_z = total_elbow = total_trigger = 0.0
+    
+    for _ in range(sample_size):
+
+        arm_status = read_write_data(size_data_in, data_out) 
+
+        total_x += arm_status.x
+        total_y += arm_status.y
+        total_z += arm_status.z 
+        total_elbow += arm_status.elbow_angle
+
+
+        avg_x = total_x / sample_size
+        avg_y = total_y / sample_size
+        avg_z = total_z / sample_size
+        avg_ea = total_elbow / sample_size
+
+        clutch = arm_status.clutch_status
+        trigger = arm_status.trigger_amount
+
+
+    return ArmStatus(avg_x, avg_y, avg_z, avg_ea, clutch, trigger)
+        
 
 
 # Example usage
@@ -102,33 +133,34 @@ if bulk_out_endpoint is None or bulk_in_endpoint is None:
     raise ValueError("Bulk endpoints not found")
 bulk_out_endpoint.write(TorqueCommand.serialize())
 
-
 while(1):
 
-    data_in = bulk_in_endpoint.read(21)  # Adjust the size to match your endpoint's max packet size
-    arm_status = ArmStatus.deserialize(data_in)
-    #Data out
-    # TorqueCommand.T1, TorqueCommand.T2, TorqueCommand.T3, x,y,z = deg2torque(arm_status.theta1, arm_status.theta2, arm_status.theta3,arm_status.W1,arm_status.W2)
+  
+    arm_status = read_write_data(21, TorqueCommand)
+
+    # data_in = bulk_in_endpoint.read(21)  # Adjust the size to match your endpoint's max packet size
+    # arm_status = ArmStatus.deserialize(data_in)
+
+    avg_arm_status = average_data(21,TorqueCommand, 20)
+    print(round(avg_arm_status.x), round(avg_arm_status.y), round(avg_arm_status.z), round(avg_arm_status.elbow_angle), round(avg_arm_status.trigger_amount), round(avg_arm_status.clutch_status))
+
+    # bulk_out_endpoint.write(TorqueCommand.serialize())
+
+    message = {
+        "jsonrpc": "2.0",
+        "method": "set_mira_cartesian",
+        "params": 
+            {
+                "left": [70.0, 28.0, -76.7, 0.0],
+                "right": [avg_arm_status.x, avg_arm_status.y, avg_arm_status.z, avg_arm_status.elbow_angle]
+            },
+        "id": 0
+    }
+
+    websocket.send(json.dumps(message))
+
+    time.sleep(0.01)
     
-    # Read data from the bulk IN endpoint
-
-    #Don't know if we need to send any data back???
-    bulk_out_endpoint.write(TorqueCommand.serialize())
-
-
-    print(arm_status)
-
-    # print(arm_status.x, arm_status.y, arm_status.z, arm_status.elbow_angle, arm_status.trigger_amount, arm_status.clutch_status)
-    
-    #Data Transmit
-    # websocket.send(json.dumps({'data': [
-    #     arm_status.x,
-    #     arm_status.y, 
-    #     arm_status.z, 
-    #     arm_status.elbow_angle, 
-    #     arm_status.trigger_amount, 
-    #     arm_status.clutch_status
-    # ]}))
 
 # Cleanup
 usb.util.dispose_resources(dev)

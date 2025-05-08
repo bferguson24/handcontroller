@@ -88,6 +88,7 @@ uint8_t const desc_fs_configuration[] =
     TUD_VENDOR_DESCRIPTOR(0, 0, BULK_OUT_ENDPOINT, BULK_IN_ENDPOINT, 64),
 };
 
+
 #if TUD_OPT_HIGH_SPEED
 // Per USB specs: high speed capable device must report device_qualifier and other_speed_configuration
 

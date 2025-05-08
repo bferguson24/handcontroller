@@ -2,7 +2,7 @@
 ******************************************************************************
 **
 
-**  File        : LinkerScript.ld
+**  File        : LinkerScript`.ld`
 **
 **  Author		: STM32CubeMX
 **

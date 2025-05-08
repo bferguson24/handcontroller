@@ -354,7 +354,7 @@ uint16_t _ff_remaining(uint16_t depth, uint16_t wr_idx, uint16_t rd_idx)
 // Advance an absolute index
 // "absolute" index is only in the range of [0..2*depth)
 static uint16_t advance_index(uint16_t depth, uint16_t idx, uint16_t offset)
- {
+{
   // We limit the index space of p such that a correct wrap around happens
   // Check for a wrap around or if we are in unused index space - This has to be checked first!!
   // We are exploiting the wrap around to the correct index
@@ -916,8 +916,11 @@ bool tu_fifo_clear(tu_fifo_t *f)
                 Overwritable mode the fifo is set to
  */
 /******************************************************************************/
-bool tu_fifo_set_overwritable(tu_fifo_t *f, bool overwritable)
-{
+bool tu_fifo_set_overwritable(tu_fifo_t *f, bool overwritable) {
+  if (f->overwritable == overwritable) {
+    return true;
+  }
+
   _ff_lock(f->mutex_wr);
   _ff_lock(f->mutex_rd);
 

@@ -68,6 +68,7 @@ def get_examples(family):
     if family == 'espressif':
         all_examples.append('device/board_test')
         all_examples.append('device/video_capture')
+        all_examples.append('host/device_info')
     all_examples.sort()
     return all_examples
 
@@ -89,7 +90,7 @@ def cmake_board(board, toolchain, build_flags_on):
     if len(build_flags_on) > 0:
         build_flags =  ' '.join(f'-D{flag}=1' for flag in build_flags_on)
         build_flags = f'-DCFLAGS_CLI="{build_flags}"'
-        build_dir += '-' + '-'.join(build_flags_on)
+        build_dir += '-f1_' + '_'.join(build_flags_on)
 
     family = find_family(board)
     if family == 'espressif':
@@ -108,7 +109,15 @@ def cmake_board(board, toolchain, build_flags_on):
         rcmd = run_cmd(f'cmake examples -B {build_dir} -G "Ninja" -DBOARD={board} -DCMAKE_BUILD_TYPE=MinSizeRel '
                        f'-DTOOLCHAIN={toolchain} {build_flags}')
         if rcmd.returncode == 0:
-            rcmd = run_cmd(f"cmake --build {build_dir}")
+            cmd = f"cmake --build {build_dir}"
+            # circleci docker return $nproc as 36 core, limit parallel according to resource class. Required for IAR, also prevent crashed/killed by docker
+            if os.getenv('CIRCLECI'):
+                resource_class = { 'small': 1, 'medium': 2, 'medium+': 3, 'large': 4 }
+                for rc in resource_class:
+                    if rc in os.getenv('CIRCLE_JOB'):
+                        cmd += f' --parallel {resource_class[rc]}'
+                        break
+            rcmd = run_cmd(cmd)
         ret[0 if rcmd.returncode == 0 else 1] += 1
 
     example = 'all'
@@ -173,9 +182,14 @@ def build_boards_list(boards, toolchain, build_system, build_flags_on):
 
 
 def build_family(family, toolchain, build_system, build_flags_on, one_per_family, boards):
+    skip_ci = ['pico_sdk']
+    if os.getenv('GITHUB_ACTIONS') or os.getenv('CIRCLECI'):
+        skip_ci_file = Path(f"hw/bsp/{family}/skip_ci.txt")
+        if skip_ci_file.exists():
+            skip_ci = skip_ci_file.read_text().split()
     all_boards = []
     for entry in os.scandir(f"hw/bsp/{family}/boards"):
-        if entry.is_dir() and entry.name != 'pico_sdk':
+        if entry.is_dir() and not entry.name in skip_ci:
             all_boards.append(entry.name)
     all_boards.sort()
 

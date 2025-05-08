@@ -12,9 +12,13 @@ const float L1C = 116.13;
 const float L2C = 79.67;
 
 // [g]
-const float ML1 = 241.21;
-const float ML2 = 144.25; 
-const float MGIMB = 398.01;
+// const float ML1 = 241.21;
+// const float ML2 = 144.25; 
+// const float MGIMB = 398.01;
+
+const float ML1 = 150;
+const float ML2 = 100; 
+const float MGIMB = 475.01;
 
 // [m/s^2]
 const float gravity = 9.80665;
@@ -23,8 +27,6 @@ void grav_comp(controller_t *controller, commands_t status){
 
 float T2_scale = controller->gc_scale_T2; 
 float T3_scale = controller->gc_scale_T3; 
-
-
 
     if (status == gc_ON){
 
@@ -82,10 +84,6 @@ controller1.clutch_status = clutch;
 
 
 
-
-
-///FIX THIS SHiiiiiiit
-
 //Calculate Raw Angles
 float theta1_0 = angle_calc(&controller->J1);
 float theta2_0 = angle_calc(&controller->J2);
@@ -118,11 +116,12 @@ float y = - (L1 * cos(theta2) + L1 * cos(theta2 + theta3)) * sin(theta1) - contr
 float z = (L1 * cos(theta2) + L2 * cos(theta2 + theta3)) * cos(theta1) - controller->homeZ;
 
 
-controller->x = controller->frameScale * (controller->miraXoff + x);
-controller->y = controller->frameScale * (controller->miraYoff + y);
-controller->z = controller->frameScale * (controller->miraZoff + z);
+controller->x = controller->frameScale * (x) + controller->miraXoff;
+controller->y = controller->frameScale * (y) + controller->miraYoff;
+controller->z = controller->frameScale * (z) + controller->miraZoff;
 
-controller->pitch = theta4 * (180/PI) - controller->pitchOffset;
+controller->pitch =  (theta4 * (180/PI)) - controller->pitchOffset;
+// controller->pitch = 0;
 
 
 

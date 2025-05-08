@@ -28,7 +28,6 @@
 #define _TUSB_USBD_H_
 
 #include "common/tusb_common.h"
-#include "tusb_config.h"
 
 #ifdef __cplusplus
 extern "C" {
